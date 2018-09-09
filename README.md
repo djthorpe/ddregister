@@ -33,7 +33,7 @@ The `-dns.user` and `-dns.passwd` flags are required and can be retrieved as per
 For example,
 
 ```
-bash% ddregister.go \
+bash% ddregister \
   -dns.user   XXXXXXXXXXXXXXX \
   -dns.passwd XXXXXXXXXXXXXXX \
   -host       XXXXXXXXXXXXXXX.mydomain.com \
