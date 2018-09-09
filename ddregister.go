@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
@@ -83,7 +84,23 @@ func RegisterExternalAddress(user, passwd string, addr net.IP, hostname string) 
 	}
 }
 
-func Main(app *gopi.AppInstance, done chan<- struct{}) error {
+func Main(app *gopi.AppInstance, done chan<- struct{}) error {	
+	// Timer to discover IP address occasionally and re-register on change
+	interval, _ := app.AppFlags.GetDuration('interval')
+	if err := app.Timer.NewInterval(interval,nil,true); err != nil {
+		return err
+	}
+
+	// Wait for CTRL+C
+	app.Logger.Info("Press CTRL+C to exit")
+	app.WaitForSignal()
+
+	// Signal done, signal success
+	done <- gopi.DONE
+	return nil
+}
+/*
+	// Return success
 	if user, _ := app.AppFlags.GetString("user"); user == "" {
 		return fmt.Errorf("Missing -user flag")
 	} else if passwd, _ := app.AppFlags.GetString("passwd"); user == "" {
@@ -99,10 +116,11 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 	}
 	return nil
 }
-
+*/
 func main() {
 	config := gopi.NewAppConfig("timer")
 	// Google username/password combination
+	config.AppFlags.FlagDuration("interval", 60*time.Minute, "IP address discovery interval")
 	config.AppFlags.FlagString("user", "", "Google Domains username")
 	config.AppFlags.FlagString("passwd", "", "Google Domains password")
 	config.AppFlags.FlagString("hostname", "", "Google Domains hostname")
