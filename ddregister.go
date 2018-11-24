@@ -28,6 +28,7 @@ type DNS interface {
 func HandleEvent(app *gopi.AppInstance, evt gopi.TimerEvent) error {
 	dns := app.ModuleInstance("sys/dns").(DNS)
 	host, _ := app.AppFlags.GetString("host")
+	app.Logger.Info("Register: %v", host)
 	if err := dns.Register(host); err != nil {
 		return err
 	}

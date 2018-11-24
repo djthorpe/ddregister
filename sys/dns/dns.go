@@ -83,6 +83,8 @@ func (this *dns) Register(host string) error {
 }
 
 func (this *dns) RegisterExternalAddress(addr net.IP, host string) error {
+	this.log.Debug2("<sys.dns.RegisterExternalAddress>{ addr=%v host='%v' }", addr, host)
+
 	if req, err := NewRequest("GET", GOOGLE_URI); err != nil {
 		return err
 	} else {
