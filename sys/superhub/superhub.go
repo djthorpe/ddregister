@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	// Frameworks
@@ -223,13 +224,15 @@ func (this *superhub) decode(keys *Values, data response) error {
 		if k == "Finish" {
 			break
 		} else if strings.HasPrefix(k, keys.SNMPBase+".") == false {
-			this.log.Warn("Bad prefix => %v", k)
+			this.log.Warn("Bad prefix %v", k)
 		} else {
 			suffix := strings.TrimPrefix(k, keys.SNMPBase+".")
 			if param, key := this.decode_(keys, suffix); param == "" {
 				this.log.Warn("Bad prefix => %v", k)
+			} else if addr, err := strconv.ParseUint(key, 10, 64); err != nil {
+				this.log.Warn("Bad prefix %v: %v", k, err)
 			} else {
-				this.log.Info("%v[%v] => %v", param, key, v)
+				this.log.Info("%v[%v] => %v", addr, param, v)
 			}
 		}
 	}
