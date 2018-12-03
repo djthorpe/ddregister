@@ -205,6 +205,16 @@ func (this *superhub) do(req *http.Request) (response, error) {
 	}
 }
 
+func (this *superhub) decode_(keys *Values, key string) (string, string) {
+	this.log.Debug2("<sys.superhub.decode>{ key=%v }", key)
+	for k, param := range keys.Keys {
+		if strings.HasPrefix(key, k) {
+			return param, strings.TrimPrefix(key, k)
+		}
+	}
+	return "", ""
+}
+
 func (this *superhub) decode(keys *Values, data response) error {
 	if keys == nil || data == nil {
 		return gopi.ErrBadParameter
@@ -216,10 +226,10 @@ func (this *superhub) decode(keys *Values, data response) error {
 			this.log.Warn("Bad prefix => %v", k)
 		} else {
 			suffix := strings.TrimPrefix(strings.TrimPrefix(k, keys.SNMPBase), ".")
-			for a, b := range keys.Keys {
-				if strings.HasPrefix(suffix, a) {
-					this.log.Info("%v => %v", b, v)
-				}
+			if param, key := this.decode_(keys, suffix); param == "" {
+				this.log.Warn("Bad prefix => %v", k)
+			} else {
+				this.log.Info("%v[%v] => %v", param, key, v)
 			}
 		}
 	}
