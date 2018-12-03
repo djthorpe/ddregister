@@ -221,8 +221,8 @@ func (this *superhub) decode(keys *Values, data response) error {
 		return gopi.ErrBadParameter
 	}
 	for k, v := range data {
-		if k == "Finish" {
-			break
+		if v == "Finish" {
+			continue
 		} else if strings.HasPrefix(k, keys.SNMPBase+".") == false {
 			this.log.Warn("Bad prefix %v => %v", k, v)
 		} else {
