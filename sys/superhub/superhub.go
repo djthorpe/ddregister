@@ -211,12 +211,16 @@ func (this *superhub) decode(keys *Values, data response) error {
 	}
 	for k, v := range data {
 		if k == "Finish" {
-			continue
+			break
 		} else if strings.HasPrefix(k, keys.SNMPBase) == false {
 			this.log.Warn("Bad prefix => %v", k)
 		} else {
-			suffix := strings.TrimPrefix(k, keys.SNMPBase)
-			this.log.Info("%v => %v", suffix, v)
+			suffix := strings.TrimPrefix(strings.TrimPrefix(k, keys.SNMPBase), ".")
+			for a, b := range keys.Keys {
+				if strings.HasPrefix(suffix, a) {
+					this.log.Info("%v => %v", b, v)
+				}
+			}
 		}
 	}
 	return nil
