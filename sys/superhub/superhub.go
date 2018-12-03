@@ -1,8 +1,8 @@
 package superhub
 
 import (
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 
@@ -26,6 +26,8 @@ type superhub struct {
 	base   *url.URL
 	client *http.Client
 }
+
+type response map[string]string
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -185,17 +187,19 @@ func newrequest(method, url string) (*http.Request, error) {
 	}
 }
 
-func (this *superhub) do(req *http.Request) ([]byte, string, error) {
+func (this *superhub) do(req *http.Request) (*response, error) {
+	var data response
 	if resp, err := this.client.Do(req); err != nil {
-		return nil, "", err
+		return nil, err
 	} else {
 		defer resp.Body.Close()
+		decoder := json.NewDecoder(resp.Body)
 		if resp.StatusCode != 200 {
-			return nil, "", fmt.Errorf("Error: %v: %v", resp.StatusCode, resp.Status)
-		} else if body, err := ioutil.ReadAll(resp.Body); err != nil {
-			return nil, "", err
+			return nil, fmt.Errorf("Error: %v: %v", resp.StatusCode, resp.Status)
+		} else if err := decoder.Decode(&data); err != nil {
+			return nil, err
 		} else {
-			return body, resp.Header.Get("Content-Type"), nil
+			return &data, nil
 		}
 	}
 }
@@ -209,10 +213,10 @@ func (this *superhub) get(keys *Values) error {
 		values := req.URL.Query()
 		values.Set("oids", keys.SNMPBase)
 		req.URL.RawQuery = values.Encode()
-		if body, mimetype, err := this.do(req); err != nil {
+		if data, err := this.do(req); err != nil {
 			return err
 		} else {
-			this.log.Debug2("<sys.superhub.get>{ mimetype=%v response='%v' }", mimetype, string(body))
+			this.log.Debug2("<sys.superhub.get>{ response='%v' }", data)
 			return nil
 		}
 	}
