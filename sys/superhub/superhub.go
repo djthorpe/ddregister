@@ -209,10 +209,10 @@ func (this *superhub) get(keys *Values) error {
 		values := req.URL.Query()
 		values.Set("oids", keys.SNMPBase)
 		req.URL.RawQuery = values.Encode()
-		if body, _, err := this.do(req); err != nil {
+		if body, mimetype, err := this.do(req); err != nil {
 			return err
 		} else {
-			this.log.Debug2("<sys.superhub.get>{ response='%v' }", string(body))
+			this.log.Debug2("<sys.superhub.get>{ mimetype=%v response='%v' }", mimetype, string(body))
 			return nil
 		}
 	}
