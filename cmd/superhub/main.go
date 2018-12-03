@@ -4,6 +4,7 @@ import (
 	"os"
 
 	// Frameworks
+	"github.com/djthorpe/ddregister"
 	"github.com/djthorpe/gopi"
 
 	// Modules
@@ -18,8 +19,11 @@ import (
 func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 
 	// Get superhub
-	superhub := app.ModuleInstance("sys/superhub")
-	app.Logger.Info("superhub=%v", superhub)
+	superhub := app.ModuleInstance("sys/superhub").(ddregister.Superhub)
+
+	if err := superhub.Get(ddregister.SUPERHUB_DOWNSTREAM); err != nil {
+		return err
+	}
 
 	// Wait for CTRL+C
 	app.Logger.Info("Press CTRL+C to exit")

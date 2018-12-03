@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
+	// Frameworks
+	"github.com/djthorpe/ddregister"
 	"github.com/djthorpe/gopi"
 )
 
@@ -34,16 +37,6 @@ type response map[string]string
 
 const (
 	USER_AGENT = "github.com/djthorpe/ddregister"
-)
-
-const (
-	SUPERHUB_DOWNSTREAM = iota
-	SUPERHUB_UPSTREAM
-	SUPERHUB_UPSTREAM_EXT
-	SUPERHUB_UPSTREAM_STATUS
-	SUPERHUB_SIGNAL_QUALITY
-	SUPERHUB_QOS
-	SUPERHUB_QOS_FLOWS
 )
 
 var (
@@ -138,6 +131,16 @@ var (
 			"17.2": "",
 		},
 	}
+
+	keymap = map[ddregister.KeyType]*Values{
+		ddregister.SUPERHUB_DOWNSTREAM:      &downstream,
+		ddregister.SUPERHUB_UPSTREAM:        &upstream,
+		ddregister.SUPERHUB_UPSTREAM_EXT:    &upstreamext,
+		ddregister.SUPERHUB_UPSTREAM_STATUS: &upstreamstatus,
+		ddregister.SUPERHUB_SIGNAL_QUALITY:  &signalqualityext,
+		ddregister.SUPERHUB_QOS:             &qos,
+		ddregister.SUPERHUB_QOS_FLOWS:       &qosflows,
+	}
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -154,10 +157,6 @@ func (config Superhub) Open(log gopi.Logger) (gopi.Driver, error) {
 		return nil, err
 	} else {
 		this.base = url
-	}
-
-	if err := this.get(&downstream); err != nil {
-		return nil, err
 	}
 
 	return this, nil
@@ -187,7 +186,9 @@ func newrequest(method, url string) (*http.Request, error) {
 	}
 }
 
-func (this *superhub) do(req *http.Request) (*response, error) {
+func (this *superhub) do(req *http.Request) (response, error) {
+	this.log.Debug2("<sys.superhub.do>{ url=%v }", req.URL)
+
 	var data response
 	if resp, err := this.client.Do(req); err != nil {
 		return nil, err
@@ -199,15 +200,34 @@ func (this *superhub) do(req *http.Request) (*response, error) {
 		} else if err := decoder.Decode(&data); err != nil {
 			return nil, err
 		} else {
-			return &data, nil
+			return data, nil
 		}
 	}
 }
 
-func (this *superhub) get(keys *Values) error {
-	this.log.Debug2("<sys.superhub.get>{}")
+func (this *superhub) decode(keys *Values, data response) error {
+	if keys == nil || data == nil {
+		return gopi.ErrBadParameter
+	}
+	for k, v := range data {
+		if k == "Finish" {
+			continue
+		} else if strings.HasPrefix(k, keys.SNMPBase) == false {
+			this.log.Warn("Bad prefix => %v", k)
+		} else {
+			suffix := strings.TrimPrefix(k, keys.SNMPBase)
+			this.log.Info("%v => %v", suffix, v)
+		}
+	}
+	return nil
+}
 
-	if req, err := newrequest("GET", this.base.String()); err != nil {
+func (this *superhub) Get(keytype ddregister.KeyType) error {
+	this.log.Debug2("<sys.superhub.Get>{ keytype=%v }", keytype)
+
+	if keys, exists := keymap[keytype]; exists == false {
+		return gopi.ErrBadParameter
+	} else if req, err := newrequest("GET", this.base.String()); err != nil {
 		return err
 	} else {
 		values := req.URL.Query()
@@ -215,8 +235,9 @@ func (this *superhub) get(keys *Values) error {
 		req.URL.RawQuery = values.Encode()
 		if data, err := this.do(req); err != nil {
 			return err
+		} else if err := this.decode(keys, data); err != nil {
+			return err
 		} else {
-			this.log.Debug2("<sys.superhub.get>{ response='%v' }", data)
 			return nil
 		}
 	}
