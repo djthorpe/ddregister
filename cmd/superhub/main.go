@@ -21,7 +21,7 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 	// Get superhub
 	superhub := app.ModuleInstance("sys/superhub").(ddregister.Superhub)
 
-	if err := superhub.Get(ddregister.SUPERHUB_DOWNSTREAM); err != nil {
+	if err := superhub.Get(ddregister.SUPERHUB_UPSTREAM_STATUS); err != nil {
 		return err
 	}
 
