@@ -208,8 +208,8 @@ func (this *superhub) do(req *http.Request) (response, error) {
 func (this *superhub) decode_(keys *Values, key string) (string, string) {
 	this.log.Debug2("<sys.superhub.decode>{ key=%v }", key)
 	for k, param := range keys.Keys {
-		if strings.HasPrefix(key+".", k) {
-			return param, strings.TrimPrefix(key+".", k)
+		if strings.HasPrefix("."+key, k) {
+			return param, strings.TrimPrefix("."+key, k)
 		}
 	}
 	return "", ""
